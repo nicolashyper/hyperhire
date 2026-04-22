@@ -100,7 +100,6 @@ function Sidebar({ currentView, onNav, recruiter, submissions }) {
         <NavItem id="jobs"        icon={<IconBriefcase />} label="Open jobs" />
         <NavItem id="submissions" icon={<IconList />}      label="My submissions" count={(submissions || []).length || undefined} />
         <NavItem id="rewards"     icon={<IconSparkle />}   label="Rewards" />
-        <NavItem id="onboarding"  icon={<IconCheck />}     label="Get set up" />
       </nav>
 
       <div style={{ flex: 1 }} />
@@ -129,7 +128,7 @@ function Sidebar({ currentView, onNav, recruiter, submissions }) {
           <div style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
           <div style={{ fontSize: 11.5, color: "var(--faint)" }}>Independent recruiter</div>
         </div>
-        <button onClick={() => onNav('onboarding')} style={{ color: "var(--faint)", padding: 2 }}>
+        <button onClick={() => { localStorage.clear(); window.location.reload(); }} style={{ color: "var(--faint)", padding: 2 }} title="Sign out">
           <IconSettings />
         </button>
       </div>

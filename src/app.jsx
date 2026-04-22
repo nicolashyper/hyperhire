@@ -123,9 +123,6 @@ function App() {
     if (screen === "rewards") {
       return <RewardsScreen submissions={submissions} recruiterEmail={recruiter.email} />;
     }
-    if (screen === "onboarding") {
-      return <OnboardingScreen onComplete={handleOnboardingComplete} />;
-    }
     return null;
   };
 
