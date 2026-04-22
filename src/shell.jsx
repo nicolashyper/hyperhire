@@ -2,6 +2,100 @@
 
 const { useState: useStateShell } = React;
 
+const SUPPORT_URL = 'https://ytnkupxvzulgtvpdnvps.supabase.co/functions/v1/send-support';
+const ANON_KEY    = 'sb_publishable_kHM9zr0VEFsy_kNWRtdaXA_i0iSO3Dv';
+
+function SupportModal({ recruiter, onClose }) {
+  const [subject, setSubject] = useStateShell('');
+  const [message, setMessage] = useStateShell('');
+  const [sending, setSending] = useStateShell(false);
+  const [sent, setSent] = useStateShell(false);
+  const [error, setError] = useStateShell('');
+
+  const handleSend = async () => {
+    if (!message.trim()) { setError('Please write a message.'); return; }
+    setSending(true); setError('');
+    const res = await fetch(SUPPORT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ANON_KEY}` },
+      body: JSON.stringify({
+        from_email: recruiter?.email || '',
+        from_name:  recruiter?.name  || '',
+        subject:    subject || 'Support request',
+        message,
+      }),
+    });
+    setSending(false);
+    if (res.ok) { setSent(true); }
+    else { setError('Failed to send. Please email nicolas@hypertalent.me directly.'); }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start',
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 320, margin: '0 0 80px 14px',
+        background: 'var(--panel)', border: '1px solid var(--line)',
+        borderRadius: 12, padding: '20px 20px 18px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
+      }}>
+        {sent ? (
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <div style={{ fontSize: 22, marginBottom: 10 }}>✓</div>
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Message sent</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>We'll get back to you shortly.</div>
+            <button onClick={onClose} style={{ fontSize: 13, color: 'var(--faint)', textDecoration: 'underline' }}>Close</button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Get support</div>
+              <button onClick={onClose} style={{ color: 'var(--faint)', fontSize: 18, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+                placeholder="Subject (optional)"
+                style={{
+                  width: '100%', border: '1px solid var(--line)', borderRadius: 6,
+                  padding: '8px 10px', fontSize: 13, outline: 'none', background: 'var(--bg)',
+                }}
+              />
+              <textarea
+                value={message}
+                onChange={e => { setMessage(e.target.value); setError(''); }}
+                placeholder="Describe your issue or question…"
+                rows={5}
+                style={{
+                  width: '100%', border: '1px solid var(--line)', borderRadius: 6,
+                  padding: '8px 10px', fontSize: 13, outline: 'none', background: 'var(--bg)',
+                  resize: 'vertical', lineHeight: 1.55,
+                }}
+              />
+              {error && <div style={{ fontSize: 12, color: 'var(--rose-ink)' }}>{error}</div>}
+              <button
+                onClick={handleSend}
+                disabled={sending}
+                style={{
+                  background: 'var(--ink)', color: '#fff', border: 'none',
+                  borderRadius: 6, padding: '9px 16px', fontSize: 13.5,
+                  fontWeight: 500, cursor: sending ? 'not-allowed' : 'pointer',
+                  opacity: sending ? 0.6 : 1,
+                }}
+              >
+                {sending ? 'Sending…' : 'Send message'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MobileNav({ currentView, onNav, submissions }) {
   const { IconBriefcase, IconList, IconSparkle, IconSettings } = window.HH_ICONS;
   const items = [
@@ -41,6 +135,8 @@ function Sidebar({ currentView, onNav, recruiter, submissions }) {
   const { IconList, IconSparkle, IconSettings, IconBriefcase, IconCheck } = window.HH_ICONS;
   const { Avatar } = window.HH_P;
 
+  const [supportOpen, setSupportOpen] = useStateShell(false);
+
   const hiredCount = (submissions || []).filter(s => s.status === 'Hired').length;
   const earned = hiredCount * 10000;
 
@@ -75,6 +171,7 @@ function Sidebar({ currentView, onNav, recruiter, submissions }) {
   const name = recruiter?.name || "You";
 
   return (
+  <>
     <aside className="hh-sidebar" style={{
       width: 232, flexShrink: 0,
       borderRight: "1px solid var(--line)",
@@ -101,6 +198,24 @@ function Sidebar({ currentView, onNav, recruiter, submissions }) {
         <NavItem id="submissions" icon={<IconList />}      label="My submissions" count={(submissions || []).length || undefined} />
         <NavItem id="rewards"     icon={<IconSparkle />}   label="Rewards" />
       </nav>
+
+      <div style={{ marginTop: 8 }}>
+        <button
+          onClick={() => setSupportOpen(true)}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            width: "100%", padding: "7px 10px", borderRadius: 6,
+            background: "transparent", color: "var(--muted)",
+            fontSize: 13.5, fontWeight: 400, textAlign: "left",
+            transition: "background 0.12s",
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "#F5F3EC"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+        >
+          <span style={{ color: "var(--faint)", display: "inline-flex", fontSize: 14 }}>?</span>
+          Support
+        </button>
+      </div>
 
       <div style={{ flex: 1 }} />
 
@@ -133,6 +248,8 @@ function Sidebar({ currentView, onNav, recruiter, submissions }) {
         </button>
       </div>
     </aside>
+    {supportOpen && <SupportModal recruiter={recruiter} onClose={() => setSupportOpen(false)} />}
+  </>
   );
 }
 
