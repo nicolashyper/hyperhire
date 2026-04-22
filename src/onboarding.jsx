@@ -13,7 +13,6 @@ function OnboardingScreen({ onComplete }) {
   const [saving, setSaving] = useStateOnb(false);
   const [saveError, setSaveError] = useStateOnb(null);
   const [done, setDone] = useStateOnb(false);
-  const [signInOpen, setSignInOpen] = useStateOnb(false);
   const [signInEmail, setSignInEmail] = useStateOnb("");
   const [signInError, setSignInError] = useStateOnb("");
 
@@ -160,38 +159,83 @@ function OnboardingScreen({ onComplete }) {
         </div>
       </div>
 
-      {/* Sign in */}
-      <div style={{ marginTop: 20, width: "100%", maxWidth: 480 }}>
-        {!signInOpen ? (
-          <div style={{ textAlign: "center" }}>
-            <span style={{ fontSize: 13, color: "var(--muted)" }}>Already applied? </span>
-            <button onClick={() => setSignInOpen(true)} style={{
-              fontSize: 13, fontWeight: 600, color: "var(--ink)",
-              textDecoration: "underline", textDecorationColor: "var(--line)",
-              textUnderlineOffset: 3,
-            }}>Sign in with your email</button>
-          </div>
-        ) : (
-          <div style={{ border: "1px solid var(--line)", borderRadius: 10, background: "var(--panel)", padding: "16px 20px" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Sign in to your account</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg)", padding: "0 11px" }}>
-                <input
-                  type="email"
-                  value={signInEmail}
-                  onChange={(e) => { setSignInEmail(e.target.value); setSignInError(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
-                  placeholder="jane@agency.com"
-                  autoFocus
-                  style={{ flex: 1, border: "none", background: "transparent", outline: "none", padding: "9px 0", fontSize: 13.5 }}
-                />
-              </div>
-              <Button variant="primary" onClick={handleSignIn}>Sign in</Button>
-            </div>
-            {signInError && <div style={{ fontSize: 12, color: "var(--rose-ink)", marginTop: 6 }}>{signInError}</div>}
-            <button onClick={() => setSignInOpen(false)} style={{ fontSize: 12, color: "var(--faint)", marginTop: 8 }}>Cancel</button>
-          </div>
-        )}
+      {/* Sign in link */}
+      <div style={{ marginTop: 20, textAlign: "center" }}>
+        <span style={{ fontSize: 13, color: "var(--muted)" }}>Already applied? </span>
+        <a href="?signin" style={{
+          fontSize: 13, fontWeight: 600, color: "var(--ink)",
+          textDecoration: "underline", textDecorationColor: "var(--line)",
+          textUnderlineOffset: 3,
+        }}>Sign in →</a>
+      </div>
+    </div>
+  );
+}
+
+// ── Sign-in screen (standalone, shown at ?signin) ─────────────────────────────
+function SignInScreen() {
+  const { Button } = window.HH_P;
+  const sb = window.HH_SB;
+  const [email, setEmail] = useStateOnb("");
+  const [error, setError] = useStateOnb("");
+  const [loading, setLoading] = useStateOnb(false);
+
+  const handleSignIn = async () => {
+    const e = email.trim().toLowerCase();
+    if (!e || !e.includes("@")) { setError("Enter a valid email address"); return; }
+    setLoading(true); setError("");
+    const { data } = await sb.from('hh_recruiters').select('email, name').eq('email', e).maybeSingle();
+    if (!data) { setError("No account found with that email. Did you mean to sign up?"); setLoading(false); return; }
+    localStorage.setItem('hh_email', data.email);
+    if (data.name) localStorage.setItem('hh_name', data.name);
+    window.location.href = window.location.pathname;
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
+      <div style={{ marginBottom: 32, display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>H</span>
+        </div>
+        <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: "-0.02em" }}>HyperHire</span>
+      </div>
+
+      <div style={{ width: "100%", maxWidth: 400, border: "1px solid var(--line)", borderRadius: 14, background: "var(--panel)", padding: "32px 32px" }}>
+        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 6 }}>Sign in</div>
+        <div style={{ fontSize: 13.5, color: "var(--muted)", marginBottom: 24, lineHeight: 1.55 }}>
+          Enter the email you used when you applied.
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <input
+            type="email"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setError(""); }}
+            onKeyDown={e => e.key === "Enter" && handleSignIn()}
+            placeholder="jane@agency.com"
+            autoFocus
+            style={{
+              width: "100%", border: "1px solid var(--line)", borderRadius: 7,
+              padding: "10px 13px", fontSize: 14, outline: "none", background: "var(--bg)",
+            }}
+          />
+          {error && <div style={{ fontSize: 12.5, color: "var(--rose-ink)" }}>{error}</div>}
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <Button variant="primary" onClick={handleSignIn} disabled={loading}>
+            {loading ? "Signing in…" : "Sign in →"}
+          </Button>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20, textAlign: "center" }}>
+        <span style={{ fontSize: 13, color: "var(--muted)" }}>New here? </span>
+        <a href={window.location.pathname} style={{
+          fontSize: 13, fontWeight: 600, color: "var(--ink)",
+          textDecoration: "underline", textDecorationColor: "var(--line)",
+          textUnderlineOffset: 3,
+        }}>Apply as a recruiter →</a>
       </div>
     </div>
   );
@@ -328,4 +372,4 @@ function PendingScreen({ name }) {
   );
 }
 
-window.HH_ONBOARDING = { OnboardingScreen, PendingScreen };
+window.HH_ONBOARDING = { OnboardingScreen, SignInScreen, PendingScreen };

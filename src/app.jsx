@@ -4,7 +4,7 @@ const { useState: useStateApp, useEffect: useEffectApp, useCallback: useCallback
 
 function App() {
   const sb = window.HH_SB;
-  const { OnboardingScreen, PendingScreen } = window.HH_ONBOARDING;
+  const { OnboardingScreen, SignInScreen, PendingScreen } = window.HH_ONBOARDING;
   const { Sidebar, MobileNav } = window.HH_SHELL;
   const { JobsScreen } = window.HH_JOBS;
   const { JobDetailScreen } = window.HH_JOB_DETAIL;
@@ -85,7 +85,10 @@ function App() {
 
   // ── Not onboarded ────────────────────────────────────────────────────────────
   if (recruiter === false) {
-    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+    const isSignIn = new URLSearchParams(window.location.search).has('signin');
+    return isSignIn
+      ? <SignInScreen />
+      : <OnboardingScreen onComplete={handleOnboardingComplete} />;
   }
 
   // ── Onboarded but not yet vetted ─────────────────────────────────────────────
