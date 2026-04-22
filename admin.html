@@ -241,8 +241,8 @@ function RecruitersPanel() {
 
   const approve = async (email) => {
     setActionId(email);
-    await window.sb.from('hh_recruiters').update({ is_vetted: true }).eq('email', email);
-    setRecruiters(prev => prev.map(r => r.email === email ? { ...r, is_vetted: true } : r));
+    await window.sb.from('hh_recruiters').update({ is_vetted: true, is_archived: false }).eq('email', email);
+    setRecruiters(prev => prev.map(r => r.email === email ? { ...r, is_vetted: true, is_archived: false } : r));
     setActionId(null);
   };
 
@@ -253,41 +253,52 @@ function RecruitersPanel() {
     setActionId(null);
   };
 
-  const reject = async (email, name) => {
-    if (!window.confirm(`Remove ${name || email} from the platform? This cannot be undone.`)) return;
+  const archive = async (email) => {
     setActionId(email);
-    await window.sb.from('hh_recruiters').delete().eq('email', email);
-    setRecruiters(prev => prev.filter(r => r.email !== email));
+    await window.sb.from('hh_recruiters').update({ is_archived: true, is_vetted: false }).eq('email', email);
+    setRecruiters(prev => prev.map(r => r.email === email ? { ...r, is_archived: true, is_vetted: false } : r));
     setActionId(null);
   };
 
-  const pending  = recruiters.filter(r => !r.is_vetted);
-  const approved = recruiters.filter(r => r.is_vetted);
-  const displayed = tab === 'pending' ? pending : tab === 'approved' ? approved : recruiters;
+  const restore = async (email) => {
+    setActionId(email);
+    await window.sb.from('hh_recruiters').update({ is_archived: false }).eq('email', email);
+    setRecruiters(prev => prev.map(r => r.email === email ? { ...r, is_archived: false } : r));
+    setActionId(null);
+  };
+
+  const active     = recruiters.filter(r => !r.is_archived);
+  const pending    = active.filter(r => !r.is_vetted);
+  const approved   = active.filter(r => r.is_vetted);
+  const archived   = recruiters.filter(r => r.is_archived);
+
+  const displayed =
+    tab === 'pending'  ? pending  :
+    tab === 'approved' ? approved :
+    tab === 'archived' ? archived : active;
 
   const tabs = [
     { id: 'pending',  label: 'Pending',  count: pending.length },
     { id: 'approved', label: 'Approved', count: approved.length },
-    { id: 'all',      label: 'All',      count: recruiters.length },
+    { id: 'all',      label: 'All',      count: active.length },
+    { id: 'archived', label: 'Archived', count: archived.length },
   ];
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 24px' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Recruiter applications</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Recruiters</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--muted)' }}>
-          Review profiles and approve access. Approved recruiters can immediately see and submit to open roles.
+          Review applications and approve access. Approved recruiters can browse and submit to open roles.
         </p>
       </div>
 
-      {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         <StatCard label="Pending review" value={pending.length} tone="warn" />
         <StatCard label="Approved" value={approved.length} tone="green" />
-        <StatCard label="Total" value={recruiters.length} />
+        <StatCard label="Archived" value={archived.length} />
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--line)', marginBottom: 20 }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
@@ -304,7 +315,7 @@ function RecruitersPanel() {
 
       {loading ? <SkeletonCards /> : displayed.length === 0 ? (
         <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5 }}>
-          {tab === 'pending' ? 'No pending applications.' : 'No recruiters in this category.'}
+          {tab === 'pending' ? 'No pending applications.' : tab === 'archived' ? 'No archived recruiters.' : 'No recruiters in this category.'}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -314,7 +325,8 @@ function RecruitersPanel() {
               busy={actionId === r.email}
               onApprove={() => approve(r.email)}
               onRevoke={() => revoke(r.email)}
-              onReject={() => reject(r.email, r.name)}
+              onArchive={() => archive(r.email)}
+              onRestore={() => restore(r.email)}
             />
           ))}
         </div>
@@ -324,16 +336,19 @@ function RecruitersPanel() {
 }
 
 // ── Recruiter card ────────────────────────────────────────────────────────────
-function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onReject }) {
+function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onArchive, onRestore }) {
   const [expanded, setExpanded] = useState(false);
   const daysAgo = r.created_at ? Math.floor((Date.now() - new Date(r.created_at)) / 86400000) : null;
   const fns = Array.isArray(r.functions) ? r.functions : [];
   const locs = Array.isArray(r.locations) ? r.locations : [];
 
+  const borderColor = r.is_archived ? 'var(--line)' : r.is_vetted ? '1.5px solid var(--accent)' : 'var(--line)';
+
   return (
     <div style={{
-      border: r.is_vetted ? '1.5px solid var(--accent)' : '1px solid var(--line)',
-      borderRadius: 10, background: 'var(--panel)', padding: '18px 20px',
+      border: r.is_vetted && !r.is_archived ? '1.5px solid var(--accent)' : '1px solid var(--line)',
+      borderRadius: 10, background: r.is_archived ? '#FAFAF7' : 'var(--panel)',
+      padding: '18px 20px', opacity: r.is_archived ? 0.7 : 1,
       transition: 'border-color 0.15s',
     }}>
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
@@ -341,7 +356,11 @@ function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onReject }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
             <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em' }}>{r.name || '—'}</span>
-            {r.is_vetted ? <Tag tone="accent">✓ Approved</Tag> : <Tag tone="warn">Pending review</Tag>}
+            {r.is_archived
+              ? <Tag tone="neutral">Archived</Tag>
+              : r.is_vetted
+                ? <Tag tone="accent">✓ Approved</Tag>
+                : <Tag tone="warn">Pending review</Tag>}
             {daysAgo !== null && (
               <span style={{ fontSize: 12, color: 'var(--faint)', marginLeft: 'auto' }}>
                 Applied {daysAgo === 0 ? 'today' : `${daysAgo}d ago`}
@@ -363,8 +382,7 @@ function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onReject }) {
           </div>
           {r.bio && (
             <div onClick={() => setExpanded(x => !x)} style={{
-              marginTop: 12, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6,
-              cursor: 'pointer',
+              marginTop: 12, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, cursor: 'pointer',
               display: expanded ? 'block' : '-webkit-box',
               WebkitLineClamp: expanded ? 'unset' : 2,
               WebkitBoxOrient: 'vertical',
@@ -378,14 +396,19 @@ function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onReject }) {
             </button>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
-          {!r.is_vetted ? (
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {r.is_archived ? (
+            <Btn variant="ghost" small onClick={onRestore} disabled={busy}>{busy ? '…' : 'Restore'}</Btn>
+          ) : r.is_vetted ? (
             <>
-              <Btn variant="danger" small onClick={onReject} disabled={busy}>Reject</Btn>
-              <Btn variant="accent" small onClick={onApprove} disabled={busy}>{busy ? '…' : '✓ Approve'}</Btn>
+              <Btn variant="warn" small onClick={onRevoke} disabled={busy}>{busy ? '…' : 'Revoke'}</Btn>
+              <Btn variant="danger" small onClick={onArchive} disabled={busy}>Archive</Btn>
             </>
           ) : (
-            <Btn variant="warn" small onClick={onRevoke} disabled={busy}>{busy ? '…' : 'Revoke'}</Btn>
+            <>
+              <Btn variant="danger" small onClick={onArchive} disabled={busy}>Archive</Btn>
+              <Btn variant="accent" small onClick={onApprove} disabled={busy}>{busy ? '…' : '✓ Approve'}</Btn>
+            </>
           )}
         </div>
       </div>
@@ -429,7 +452,7 @@ function CandidatesPanel() {
     { id: 'Submitted',    label: 'Submitted' },
     { id: 'Interviewing', label: 'Interviewing' },
     { id: 'Hired',        label: 'Hired' },
-    { id: 'Rejected',     label: 'Rejected' },
+    { id: 'Rejected',     label: 'Archived' },
   ];
 
   const q = search.toLowerCase();
@@ -650,48 +673,64 @@ function SubmissionCard({ submission: s, onUpdate }) {
   );
 }
 
-// ── Top bar with nav ──────────────────────────────────────────────────────────
-function TopBar({ page, setPage, onLogout, recruiterCount, submissionCount }) {
+// ── Sidebar nav ───────────────────────────────────────────────────────────────
+function AdminSidebar({ page, setPage, onLogout, recruiterPending, submissionPending }) {
   const navItems = [
-    { id: 'recruiters', label: 'Recruiters', count: recruiterCount },
-    { id: 'candidates', label: 'Candidates', count: submissionCount },
+    { id: 'recruiters', label: 'Recruiters', badge: recruiterPending || null, icon: '👤' },
+    { id: 'candidates', label: 'Candidates', badge: submissionPending || null, icon: '📋' },
   ];
   return (
     <div style={{
-      position: 'sticky', top: 0, zIndex: 50,
-      background: 'var(--panel)', borderBottom: '1px solid var(--line)',
-      padding: '0 32px', display: 'flex', alignItems: 'center', height: 56, gap: 0,
+      width: 220, flexShrink: 0, background: 'var(--panel)', borderRight: '1px solid var(--line)',
+      display: 'flex', flexDirection: 'column', minHeight: '100vh',
+      position: 'sticky', top: 0, height: '100vh',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginRight: 28 }}>
-        <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--ink)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: '#fff', fontWeight: 700, fontSize: 12 }}>H</span>
+      {/* Logo */}
+      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--line)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--ink)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>H</span>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em', lineHeight: 1.2 }}>HyperHire</div>
+            <div style={{ fontSize: 11, color: 'var(--faint)', fontWeight: 500 }}>Admin panel</div>
+          </div>
         </div>
-        <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>HyperHire</span>
-        <span style={{ fontSize: 12, color: 'var(--faint)', padding: '2px 8px', background: '#F0EEE7', borderRadius: 4, fontWeight: 500 }}>Admin</span>
       </div>
 
-      <div style={{ display: 'flex', height: '100%', gap: 0 }}>
+      {/* Nav */}
+      <div style={{ padding: '12px 10px', flex: 1 }}>
         {navItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => setPage(item.id)}
-            style={{
-              padding: '0 18px', fontSize: 13.5, fontWeight: 500,
-              color: page === item.id ? 'var(--ink)' : 'var(--muted)',
-              borderBottom: page === item.id ? '2px solid var(--ink)' : '2px solid transparent',
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              transition: 'color 0.1s',
-            }}>
-            {item.label}
-            {item.count !== undefined && (
-              <span className="mono" style={{ fontSize: 11, color: 'var(--faint)', padding: '1px 6px', background: '#F3F1EA', borderRadius: 999 }}>{item.count}</span>
+          <button key={item.id} onClick={() => setPage(item.id)} style={{
+            width: '100%', textAlign: 'left', padding: '9px 12px', borderRadius: 7,
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2,
+            background: page === item.id ? 'var(--line-2)' : 'transparent',
+            color: page === item.id ? 'var(--ink)' : 'var(--muted)',
+            fontWeight: page === item.id ? 600 : 400, fontSize: 13.5,
+            transition: 'background 0.1s, color 0.1s',
+          }}>
+            <span style={{ fontSize: 15 }}>{item.icon}</span>
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {item.badge > 0 && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, background: 'var(--warn-bg)', color: 'var(--warn-ink)',
+                padding: '1px 7px', borderRadius: 999, minWidth: 20, textAlign: 'center',
+              }}>{item.badge}</span>
             )}
           </button>
         ))}
       </div>
 
-      <div style={{ flex: 1 }} />
-      <Btn variant="ghost" small onClick={onLogout}>Sign out</Btn>
+      {/* Sign out */}
+      <div style={{ padding: '12px 10px', borderTop: '1px solid var(--line)' }}>
+        <button onClick={onLogout} style={{
+          width: '100%', textAlign: 'left', padding: '9px 12px', borderRadius: 7,
+          display: 'flex', alignItems: 'center', gap: 10,
+          color: 'var(--muted)', fontSize: 13, fontWeight: 400,
+        }}>
+          <span style={{ fontSize: 15 }}>↩</span> Sign out
+        </button>
+      </div>
     </div>
   );
 }
@@ -699,21 +738,25 @@ function TopBar({ page, setPage, onLogout, recruiterCount, submissionCount }) {
 // ── Dashboard shell ───────────────────────────────────────────────────────────
 function Dashboard({ onLogout }) {
   const [page, setPage] = useState('recruiters');
-  const [recruiterCount, setRecruiterCount] = useState(undefined);
-  const [submissionCount, setSubmissionCount] = useState(undefined);
+  const [recruiterPending, setRecruiterPending] = useState(0);
+  const [submissionPending, setSubmissionPending] = useState(0);
 
   useEffect(() => {
     window.sb.from('hh_recruiters').select('id', { count: 'exact', head: true })
-      .then(({ count }) => setRecruiterCount(count ?? 0));
+      .eq('is_vetted', false).eq('is_archived', false)
+      .then(({ count }) => setRecruiterPending(count ?? 0));
     window.sb.from('hh_submissions').select('id', { count: 'exact', head: true })
-      .then(({ count }) => setSubmissionCount(count ?? 0));
+      .eq('status', 'Submitted')
+      .then(({ count }) => setSubmissionPending(count ?? 0));
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <TopBar page={page} setPage={setPage} onLogout={onLogout}
-        recruiterCount={recruiterCount} submissionCount={submissionCount} />
-      {page === 'recruiters' ? <RecruitersPanel /> : <CandidatesPanel />}
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+      <AdminSidebar page={page} setPage={setPage} onLogout={onLogout}
+        recruiterPending={recruiterPending} submissionPending={submissionPending} />
+      <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
+        {page === 'recruiters' ? <RecruitersPanel /> : <CandidatesPanel />}
+      </div>
     </div>
   );
 }
