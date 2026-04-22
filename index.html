@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HyperHire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --panel: #FFFFFE;
+    --ink: #111110;
+    --ink-2: #3A3A35;
+    --muted: #6B6B63;
+    --faint: #9A9A90;
+    --line: #E8E6DF;
+    --line-2: #F0EEE7;
+    --accent: oklch(0.62 0.12 145);
+    --accent-bg: oklch(0.96 0.03 145);
+    --accent-ink: oklch(0.38 0.09 145);
+    --warn-bg: oklch(0.96 0.04 75);
+    --warn-ink: oklch(0.45 0.10 65);
+    --rose-bg: oklch(0.95 0.03 25);
+    --rose-ink: oklch(0.45 0.10 25);
+    --blue-bg: oklch(0.96 0.03 250);
+    --blue-ink: oklch(0.45 0.10 250);
+    --radius: 6px;
+    --radius-lg: 10px;
+    --shadow-sm: 0 1px 0 rgba(17,17,16,0.04);
+    --shadow-md: 0 1px 2px rgba(17,17,16,0.06), 0 4px 12px rgba(17,17,16,0.04);
+    --shadow-pop: 0 12px 32px rgba(17,17,16,0.10), 0 2px 6px rgba(17,17,16,0.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; font-size: inherit; }
+  input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #D8D6CF; border-radius: 10px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: #C0BEB7; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .skeleton { animation: pulse 1.5s ease-in-out infinite; background: var(--line-2); border-radius: 4px; }
+
+  /* ── Responsive ────────────────────────────────────────── */
+  .hh-mobile-nav { display: none; }
+
+  @media (max-width: 768px) {
+    .hh-sidebar    { display: none !important; }
+    .hh-layout     { flex-direction: column !important; }
+    .hh-content    { padding-bottom: 72px; }
+    .hh-mobile-nav {
+      display: flex;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: var(--panel); border-top: 1px solid var(--line);
+      padding: 6px 0 max(8px, env(safe-area-inset-bottom));
+      justify-content: space-around; align-items: center;
+    }
+    .hh-topbar  { padding: 12px 16px 10px !important; }
+    .hh-topbar h1 { font-size: 18px !important; }
+    .hh-topbar-right { display: none !important; }
+    .hh-page    { padding: 16px 16px 28px !important; }
+
+    /* Filter chips: horizontal scroll, no wrap */
+    .hh-filter-chips {
+      flex-wrap: nowrap !important;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px; scrollbar-width: none;
+    }
+    .hh-filter-chips::-webkit-scrollbar { display: none; }
+
+    /* Job list: hide salary/fee/posted meta columns */
+    .hh-job-meta { display: none !important; }
+
+    /* Job detail: single column */
+    .hh-detail-grid { grid-template-columns: 1fr !important; }
+    .hh-detail-rail { position: static !important; top: auto !important; }
+
+    /* Rewards tier cards: single column */
+    .hh-tier-grid { grid-template-columns: 1fr !important; }
+
+    /* Submissions stat cards: 2×2 */
+    .hh-stat-grid { grid-template-columns: 1fr 1fr !important; }
+
+    /* Submissions table: horizontal scroll (override inline overflow:hidden) */
+    .hh-sub-table { overflow-x: auto !important; overflow-y: visible !important; -webkit-overflow-scrolling: touch; }
+    .hh-sub-table > * { min-width: 640px; }
+
+    /* Submit form grids: single column */
+    .hh-form-grid { grid-template-columns: 1fr !important; }
+
+    /* Onboarding step row: scrollable */
+    .hh-onb-steps {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      justify-content: flex-start !important; padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .hh-onb-steps::-webkit-scrollbar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script type="text/babel" src="src/config.js"></script>
+<script type="text/babel" src="src/icons.jsx"></script>
+<script type="text/babel" src="src/primitives.jsx"></script>
+<script type="text/babel" src="src/shell.jsx"></script>
+<script type="text/babel" src="src/jobs.jsx"></script>
+<script type="text/babel" src="src/job_detail.jsx"></script>
+<script type="text/babel" src="src/submit.jsx"></script>
+<script type="text/babel" src="src/submissions.jsx"></script>
+<script type="text/babel" src="src/rewards.jsx"></script>
+<script type="text/babel" src="src/onboarding.jsx"></script>
+<script type="text/babel" src="src/app.jsx"></script>
+</body>
+</html>
