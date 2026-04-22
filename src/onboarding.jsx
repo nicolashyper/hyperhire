@@ -212,7 +212,7 @@ function SignInScreen() {
             value={email}
             onChange={e => { setEmail(e.target.value); setError(""); }}
             onKeyDown={e => e.key === "Enter" && handleSignIn()}
-            placeholder="jane@agency.com"
+            placeholder="jane@gmail.com"
             autoFocus
             style={{
               width: "100%", border: "1px solid var(--line)", borderRadius: 7,
@@ -254,7 +254,7 @@ function StepAccount({ form, update, errors }) {
           <Input value={form.name} onChange={(v) => update("name", v)} placeholder="Jane Smith" />
         </Field>
         <Field label="Work email" required error={errors.email}>
-          <Input value={form.email} onChange={(v) => update("email", v)} placeholder="jane@agency.com" />
+          <Input value={form.email} onChange={(v) => update("email", v)} placeholder="jane@gmail.com" />
         </Field>
         <Field label="LinkedIn URL" required error={errors.linkedin_url}>
           <Input value={form.linkedin_url} onChange={(v) => update("linkedin_url", v)} placeholder="linkedin.com/in/…" prefix="https://" />
