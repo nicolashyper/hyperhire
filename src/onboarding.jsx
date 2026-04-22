@@ -174,7 +174,7 @@ function OnboardingScreen({ onComplete }) {
         <div style={{ fontSize: 12, color: "var(--faint)", marginBottom: 18, letterSpacing: "0.02em" }}>
           100+ startups hire with HyperHire, backed by
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px 0", alignItems: "center", justifyItems: "center" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px 0", alignItems: "center", justifyItems: "center" }}>
           {[
             { src: "assets/investors/yc.png",         alt: "Y Combinator" },
             { src: "assets/investors/sequoia.png",    alt: "Sequoia" },
