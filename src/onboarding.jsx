@@ -257,7 +257,7 @@ function StepAccount({ form, update, errors }) {
           <Input value={form.email} onChange={(v) => update("email", v)} placeholder="jane@gmail.com" />
         </Field>
         <Field label="LinkedIn URL" required error={errors.linkedin_url}>
-          <Input value={form.linkedin_url} onChange={(v) => update("linkedin_url", v)} placeholder="linkedin.com/in/…" prefix="https://" />
+          <Input value={form.linkedin_url} onChange={(v) => update("linkedin_url", v.replace(/^https?:\/\//, ''))} placeholder="linkedin.com/in/…" prefix="https://" />
         </Field>
       </div>
     </div>
