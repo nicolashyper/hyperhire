@@ -346,7 +346,7 @@ function PendingScreen({ name }) {
           Your application is under review. We vet every recruiter manually to keep the quality bar high for hiring managers.
         </p>
         <p style={{ margin: "0 0 26px", fontSize: 13.5, color: "var(--muted)", lineHeight: 1.55 }}>
-          The fastest way to get approved is to book a quick 15-minute intro call.
+          To get approved, you must book a 10-minute intro call.
         </p>
 
         <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
@@ -360,12 +360,12 @@ function PendingScreen({ name }) {
           onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
           >
             <span style={{ fontSize: 16 }}>📅</span>
-            Book intro call · 15 min
+            Book intro call · 10 min
           </div>
         </a>
 
         <div style={{ marginTop: 20, fontSize: 12.5, color: "var(--faint)" }}>
-          Already booked? We'll email you when your account is approved.
+          We'll email you once your account is approved after the call.
         </div>
       </div>
     </div>
