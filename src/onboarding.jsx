@@ -170,11 +170,11 @@ function OnboardingScreen({ onComplete }) {
       </div>
 
       {/* Trust strip */}
-      <div style={{ marginTop: 48, width: "100%", maxWidth: 520, textAlign: "center" }}>
+      <div style={{ marginTop: 48, width: "100%", maxWidth: 680, textAlign: "center" }}>
         <div style={{ fontSize: 12, color: "var(--faint)", marginBottom: 18, letterSpacing: "0.02em" }}>
           100+ startups hire with HyperHire, backed by
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 28, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, flexWrap: "nowrap" }}>
           {[
             { src: "assets/investors/yc.png",         alt: "Y Combinator" },
             { src: "assets/investors/sequoia.png",    alt: "Sequoia" },
