@@ -182,13 +182,7 @@ function Sidebar({ currentView, onNav, recruiter, submissions }) {
     }}>
       {/* Logo */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px", marginBottom: 22 }}>
-        <div style={{
-          width: 22, height: 22, borderRadius: 5,
-          background: "var(--ink)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--accent)" }} />
-        </div>
+        <img src="assets/logo-mark.svg" alt="HyperHire" style={{ width: 22, height: 22 }} />
         <div style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: "-0.01em" }}>HyperHire</div>
       </div>
 

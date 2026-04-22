@@ -168,6 +168,28 @@ function OnboardingScreen({ onComplete }) {
           textUnderlineOffset: 3,
         }}>Sign in →</a>
       </div>
+
+      {/* Trust strip */}
+      <div style={{ marginTop: 48, width: "100%", maxWidth: 520, textAlign: "center" }}>
+        <div style={{ fontSize: 12, color: "var(--faint)", marginBottom: 18, letterSpacing: "0.02em" }}>
+          100+ startups hire with HyperHire, backed by
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 28, flexWrap: "wrap" }}>
+          {[
+            { src: "https://cdn.prod.website-files.com/6836cc4371493671de49dafd/68f1f8cc1ffceecfaad21c52_Frame%201.png", alt: "Y Combinator" },
+            { src: "https://cdn.prod.website-files.com/6836cc4371493671de49dafd/68f1f908d7c08d1407391bb9_Frame%202.png", alt: "Sequoia" },
+            { src: "https://cdn.prod.website-files.com/6836cc4371493671de49dafd/68f1f908740646c41fa0a15d_Frame%203.png", alt: "a16z" },
+            { src: "https://cdn.prod.website-files.com/6836cc4371493671de49dafd/68f1f908387a98785becb9e9_Frame%205.png", alt: "Accel" },
+            { src: "https://cdn.prod.website-files.com/6836cc4371493671de49dafd/68f1f90a53b218586c135cb3_Frame%206.png", alt: "Paradigm" },
+            { src: "https://cdn.prod.website-files.com/6836cc4371493671de49dafd/68f1f9097c8544492b3d685d_Frame%2012.png", alt: "Lightspeed" },
+          ].map(({ src, alt }) => (
+            <img key={alt} src={src} alt={alt} style={{
+              height: 22, width: "auto", objectFit: "contain",
+              filter: "grayscale(1) opacity(0.4)",
+            }} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
