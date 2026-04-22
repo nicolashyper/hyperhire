@@ -15,6 +15,7 @@
     --warn-bg: oklch(0.96 0.04 75); --warn-ink: oklch(0.45 0.10 65);
     --rose-bg: oklch(0.95 0.03 25); --rose-ink: oklch(0.45 0.10 25);
     --blue-bg: oklch(0.96 0.03 250); --blue-ink: oklch(0.45 0.10 250);
+    --amber-bg: oklch(0.96 0.05 80); --amber-ink: oklch(0.48 0.12 75);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
@@ -22,7 +23,7 @@
     -webkit-font-smoothing: antialiased; }
   .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
   button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-  input { font-family: inherit; font-size: inherit; color: inherit; }
+  input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   .skeleton { animation: pulse 1.5s ease-in-out infinite; background: var(--line-2); border-radius: 4px; }
 </style>
@@ -42,7 +43,7 @@
 </script>
 
 <script type="text/babel">
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, useRef } = React;
 const ADMIN_EMAIL = 'nicolas@hypertalent.me';
 
 // ── Avatar ──────────────────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ function Btn({ children, variant = 'ghost', onClick, disabled, small }) {
   );
 }
 
-// ── Chip badge ───────────────────────────────────────────────────────────────
+// ── Tag ──────────────────────────────────────────────────────────────────────
 function Tag({ children, tone = 'neutral' }) {
   const colors = {
     neutral: { bg: '#F0EEE7', color: 'var(--muted)' },
@@ -96,6 +97,8 @@ function Tag({ children, tone = 'neutral' }) {
     blue:    { bg: 'var(--blue-bg)', color: 'var(--blue-ink)' },
     warn:    { bg: 'var(--warn-bg)', color: 'var(--warn-ink)' },
     rose:    { bg: 'var(--rose-bg)', color: 'var(--rose-ink)' },
+    amber:   { bg: 'var(--amber-bg)', color: 'var(--amber-ink)' },
+    green:   { bg: 'var(--accent-bg)', color: 'var(--accent-ink)' },
   };
   const c = colors[tone] || colors.neutral;
   return (
@@ -106,7 +109,32 @@ function Tag({ children, tone = 'neutral' }) {
   );
 }
 
+function statusTone(status) {
+  if (status === 'Hired')        return 'accent';
+  if (status === 'Interviewing') return 'amber';
+  if (status === 'Rejected')     return 'rose';
+  return 'neutral';
+}
+
 // ── Login ────────────────────────────────────────────────────────────────────
+function FieldInput({ label, type = 'text', value, onChange, onKeyDown }) {
+  return (
+    <div>
+      <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--muted)', marginBottom: 5 }}>{label}</div>
+      <input
+        type={type} value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        style={{
+          width: '100%', border: '1px solid var(--line)', borderRadius: 6,
+          padding: '9px 11px', fontSize: 13.5, outline: 'none',
+          background: 'var(--bg)',
+        }}
+      />
+    </div>
+  );
+}
+
 function LoginScreen({ onSession }) {
   const [email, setEmail] = useState(ADMIN_EMAIL);
   const [password, setPassword] = useState('');
@@ -135,7 +163,6 @@ function LoginScreen({ onSession }) {
             <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: -1 }}>Admin panel</div>
           </div>
         </div>
-
         <div style={{ border: '1px solid var(--line)', borderRadius: 12, background: 'var(--panel)', padding: '28px 26px' }}>
           <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 20 }}>Sign in</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -155,26 +182,46 @@ function LoginScreen({ onSession }) {
   );
 }
 
-function FieldInput({ label, type = 'text', value, onChange, onKeyDown }) {
+// ── Skeleton rows ────────────────────────────────────────────────────────────
+function SkeletonCards({ count = 3 }) {
   return (
-    <div>
-      <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--muted)', marginBottom: 5 }}>{label}</div>
-      <input
-        type={type} value={value}
-        onChange={e => onChange(e.target.value)}
-        onKeyDown={onKeyDown}
-        style={{
-          width: '100%', border: '1px solid var(--line)', borderRadius: 6,
-          padding: '9px 11px', fontSize: 13.5, outline: 'none',
-          background: 'var(--bg)',
-        }}
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} style={{ border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel)', padding: 20 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <div className="skeleton" style={{ width: 42, height: 42, borderRadius: '50%' }} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="skeleton" style={{ height: 14, width: '30%' }} />
+              <div className="skeleton" style={{ height: 12, width: '50%' }} />
+              <div className="skeleton" style={{ height: 12, width: '70%' }} />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-// ── Dashboard ────────────────────────────────────────────────────────────────
-function Dashboard({ onLogout }) {
+// ── Stat card ────────────────────────────────────────────────────────────────
+function StatCard({ label, value, tone }) {
+  const colors = {
+    default: { bg: 'var(--panel)', border: 'var(--line)', val: 'var(--ink)' },
+    amber:   { bg: 'var(--amber-bg)', border: 'oklch(0.88 0.05 80)', val: 'var(--amber-ink)' },
+    green:   { bg: 'var(--accent-bg)', border: 'oklch(0.88 0.06 145)', val: 'var(--accent-ink)' },
+    rose:    { bg: 'var(--rose-bg)', border: 'oklch(0.88 0.04 25)', val: 'var(--rose-ink)' },
+    warn:    { bg: 'var(--warn-bg)', border: 'oklch(0.88 0.05 75)', val: 'var(--warn-ink)' },
+  };
+  const c = colors[tone || 'default'];
+  return (
+    <div style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 8, padding: '14px 18px', minWidth: 90, flex: 1 }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: c.val }}>{value}</div>
+      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>{label}</div>
+    </div>
+  );
+}
+
+// ── Recruiters panel ──────────────────────────────────────────────────────────
+function RecruitersPanel() {
   const [recruiters, setRecruiters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('pending');
@@ -182,10 +229,7 @@ function Dashboard({ onLogout }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await window.sb
-      .from('hh_recruiters')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data } = await window.sb.from('hh_recruiters').select('*').order('created_at', { ascending: false });
     setRecruiters(data || []);
     setLoading(false);
   }, []);
@@ -225,82 +269,53 @@ function Dashboard({ onLogout }) {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Top bar */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'var(--panel)', borderBottom: '1px solid var(--line)',
-        padding: '0 32px', display: 'flex', alignItems: 'center', height: 56, gap: 16,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--ink)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: 12 }}>H</span>
-          </div>
-          <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>HyperHire</span>
-          <span style={{ fontSize: 12, color: 'var(--faint)', padding: '2px 8px', background: '#F0EEE7', borderRadius: 4, fontWeight: 500 }}>Admin</span>
-        </div>
-        <div style={{ flex: 1 }} />
-        <Btn variant="ghost" small onClick={onLogout}>Sign out</Btn>
+    <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 24px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Recruiter applications</h1>
+        <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--muted)' }}>
+          Review profiles and approve access. Approved recruiters can immediately see and submit to open roles.
+        </p>
       </div>
 
-      {/* Page */}
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 24px' }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Recruiter applications</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--muted)' }}>
-            Review profiles and approve access. Approved recruiters can immediately see and submit to open roles.
-          </p>
-        </div>
+      {/* Stats */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+        <StatCard label="Pending review" value={pending.length} tone="warn" />
+        <StatCard label="Approved" value={approved.length} tone="green" />
+        <StatCard label="Total" value={recruiters.length} />
+      </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--line)', marginBottom: 20 }}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
-              padding: '9px 16px', fontSize: 13.5, fontWeight: 500,
-              color: tab === t.id ? 'var(--ink)' : 'var(--muted)',
-              borderBottom: tab === t.id ? '2px solid var(--ink)' : '2px solid transparent',
-              marginBottom: -1, display: 'inline-flex', alignItems: 'center', gap: 8,
-            }}>
-              {t.label}
-              <span className="mono" style={{ fontSize: 11, color: 'var(--faint)', padding: '1px 6px', background: '#F3F1EA', borderRadius: 999 }}>{t.count}</span>
-            </button>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--line)', marginBottom: 20 }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding: '9px 16px', fontSize: 13.5, fontWeight: 500,
+            color: tab === t.id ? 'var(--ink)' : 'var(--muted)',
+            borderBottom: tab === t.id ? '2px solid var(--ink)' : '2px solid transparent',
+            marginBottom: -1, display: 'inline-flex', alignItems: 'center', gap: 8,
+          }}>
+            {t.label}
+            <span className="mono" style={{ fontSize: 11, color: 'var(--faint)', padding: '1px 6px', background: '#F3F1EA', borderRadius: 999 }}>{t.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {loading ? <SkeletonCards /> : displayed.length === 0 ? (
+        <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5 }}>
+          {tab === 'pending' ? 'No pending applications.' : 'No recruiters in this category.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {displayed.map(r => (
+            <RecruiterCard
+              key={r.email} recruiter={r}
+              busy={actionId === r.email}
+              onApprove={() => approve(r.email)}
+              onRevoke={() => revoke(r.email)}
+              onReject={() => reject(r.email, r.name)}
+            />
           ))}
         </div>
-
-        {/* List */}
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[1,2,3].map(i => (
-              <div key={i} style={{ border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel)', padding: 20 }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <div className="skeleton" style={{ width: 42, height: 42, borderRadius: '50%' }} />
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div className="skeleton" style={{ height: 14, width: '30%' }} />
-                    <div className="skeleton" style={{ height: 12, width: '50%' }} />
-                    <div className="skeleton" style={{ height: 12, width: '70%' }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : displayed.length === 0 ? (
-          <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5 }}>
-            {tab === 'pending' ? 'No pending applications.' : 'No recruiters in this category.'}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {displayed.map(r => (
-              <RecruiterCard
-                key={r.email} recruiter={r}
-                busy={actionId === r.email}
-                onApprove={() => approve(r.email)}
-                onRevoke={() => revoke(r.email)}
-                onReject={() => reject(r.email, r.name)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -308,11 +323,7 @@ function Dashboard({ onLogout }) {
 // ── Recruiter card ────────────────────────────────────────────────────────────
 function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onReject }) {
   const [expanded, setExpanded] = useState(false);
-
-  const daysAgo = r.created_at
-    ? Math.floor((Date.now() - new Date(r.created_at)) / 86400000)
-    : null;
-
+  const daysAgo = r.created_at ? Math.floor((Date.now() - new Date(r.created_at)) / 86400000) : null;
   const fns = Array.isArray(r.functions) ? r.functions : [];
   const locs = Array.isArray(r.locations) ? r.locations : [];
 
@@ -322,55 +333,40 @@ function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onReject }) {
       borderRadius: 10, background: 'var(--panel)', padding: '18px 20px',
       transition: 'border-color 0.15s',
     }}>
-      {/* Header row */}
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         <Avatar name={r.name} size={42} />
-
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
             <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em' }}>{r.name || '—'}</span>
-            {r.is_vetted
-              ? <Tag tone="accent">✓ Approved</Tag>
-              : <Tag tone="warn">Pending review</Tag>}
+            {r.is_vetted ? <Tag tone="accent">✓ Approved</Tag> : <Tag tone="warn">Pending review</Tag>}
             {daysAgo !== null && (
               <span style={{ fontSize: 12, color: 'var(--faint)', marginLeft: 'auto' }}>
                 Applied {daysAgo === 0 ? 'today' : `${daysAgo}d ago`}
               </span>
             )}
           </div>
-
           <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', fontSize: 13, color: 'var(--muted)' }}>
             <span>{r.email}</span>
             {r.linkedin_url && (
               <a href={r.linkedin_url} target="_blank" rel="noopener noreferrer"
-                style={{ color: 'var(--blue-ink)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}
-                onClick={e => e.stopPropagation()}>
-                LinkedIn ↗
-              </a>
+                style={{ color: 'var(--blue-ink)', textDecoration: 'none' }}
+                onClick={e => e.stopPropagation()}>LinkedIn ↗</a>
             )}
           </div>
-
-          {/* Tags row */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
             {r.years_exp && <Tag>{r.years_exp}</Tag>}
             {fns.map(f => <Tag key={f} tone="blue">{f}</Tag>)}
             {locs.map(l => <Tag key={l}>{l}</Tag>)}
           </div>
-
-          {/* Bio */}
           {r.bio && (
-            <div
-              onClick={() => setExpanded(x => !x)}
-              style={{
-                marginTop: 12, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6,
-                cursor: 'pointer',
-                display: expanded ? 'block' : '-webkit-box',
-                WebkitLineClamp: expanded ? 'unset' : 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: expanded ? 'visible' : 'hidden',
-              }}>
-              "{r.bio}"
-            </div>
+            <div onClick={() => setExpanded(x => !x)} style={{
+              marginTop: 12, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6,
+              cursor: 'pointer',
+              display: expanded ? 'block' : '-webkit-box',
+              WebkitLineClamp: expanded ? 'unset' : 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: expanded ? 'visible' : 'hidden',
+            }}>"{r.bio}"</div>
           )}
           {r.bio && r.bio.length > 120 && (
             <button onClick={() => setExpanded(x => !x)}
@@ -379,20 +375,14 @@ function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onReject }) {
             </button>
           )}
         </div>
-
-        {/* Actions */}
         <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
           {!r.is_vetted ? (
             <>
               <Btn variant="danger" small onClick={onReject} disabled={busy}>Reject</Btn>
-              <Btn variant="accent" small onClick={onApprove} disabled={busy}>
-                {busy ? '…' : '✓ Approve'}
-              </Btn>
+              <Btn variant="accent" small onClick={onApprove} disabled={busy}>{busy ? '…' : '✓ Approve'}</Btn>
             </>
           ) : (
-            <Btn variant="warn" small onClick={onRevoke} disabled={busy}>
-              {busy ? '…' : 'Revoke'}
-            </Btn>
+            <Btn variant="warn" small onClick={onRevoke} disabled={busy}>{busy ? '…' : 'Revoke'}</Btn>
           )}
         </div>
       </div>
@@ -400,9 +390,334 @@ function RecruiterCard({ recruiter: r, busy, onApprove, onRevoke, onReject }) {
   );
 }
 
+// ── Candidates panel ──────────────────────────────────────────────────────────
+function CandidatesPanel() {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await window.sb
+      .from('hh_submissions')
+      .select('*, hh_jobs(title, company_name)')
+      .order('submitted_at', { ascending: false });
+    if (!error) setSubmissions(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const updateSubmission = useCallback((id, patch) => {
+    setSubmissions(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
+  }, []);
+
+  const counts = {
+    all: submissions.length,
+    Submitted: submissions.filter(s => s.status === 'Submitted').length,
+    Interviewing: submissions.filter(s => s.status === 'Interviewing').length,
+    Hired: submissions.filter(s => s.status === 'Hired').length,
+    Rejected: submissions.filter(s => s.status === 'Rejected').length,
+  };
+
+  const tabs = [
+    { id: 'all',          label: 'All' },
+    { id: 'Submitted',    label: 'Submitted' },
+    { id: 'Interviewing', label: 'Interviewing' },
+    { id: 'Hired',        label: 'Hired' },
+    { id: 'Rejected',     label: 'Rejected' },
+  ];
+
+  const q = search.toLowerCase();
+  const displayed = submissions
+    .filter(s => tab === 'all' || s.status === tab)
+    .filter(s => !q || s.candidate_name?.toLowerCase().includes(q) || s.candidate_email?.toLowerCase().includes(q) || s.recruiter_email?.toLowerCase().includes(q) || s.hh_jobs?.title?.toLowerCase().includes(q) || s.hh_jobs?.company_name?.toLowerCase().includes(q));
+
+  return (
+    <div style={{ maxWidth: 940, margin: '0 auto', padding: '32px 24px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Candidate submissions</h1>
+        <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--muted)' }}>
+          All candidates submitted by recruiters. Update pipeline status and add feedback.
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+        <StatCard label="Total" value={counts.all} />
+        <StatCard label="Awaiting review" value={counts.Submitted} tone="warn" />
+        <StatCard label="Interviewing" value={counts.Interviewing} tone="amber" />
+        <StatCard label="Hired" value={counts.Hired} tone="green" />
+        <StatCard label="Rejected" value={counts.Rejected} tone="rose" />
+      </div>
+
+      {/* Tabs + search */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{ flex: 1, display: 'flex', gap: 2, borderBottom: '1px solid var(--line)' }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              padding: '9px 14px', fontSize: 13, fontWeight: 500,
+              color: tab === t.id ? 'var(--ink)' : 'var(--muted)',
+              borderBottom: tab === t.id ? '2px solid var(--ink)' : '2px solid transparent',
+              marginBottom: -1, display: 'inline-flex', alignItems: 'center', gap: 7,
+            }}>
+              {t.label}
+              <span className="mono" style={{ fontSize: 11, color: 'var(--faint)', padding: '1px 6px', background: '#F3F1EA', borderRadius: 999 }}>
+                {t.id === 'all' ? counts.all : counts[t.id]}
+              </span>
+            </button>
+          ))}
+        </div>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search candidates, roles…"
+          style={{
+            border: '1px solid var(--line)', borderRadius: 6, padding: '7px 11px',
+            fontSize: 13, outline: 'none', background: 'var(--panel)', width: 220,
+          }}
+        />
+      </div>
+
+      {loading ? <SkeletonCards count={4} /> : displayed.length === 0 ? (
+        <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5 }}>
+          {search ? 'No results match your search.' : 'No submissions yet.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {displayed.map(s => (
+            <SubmissionCard key={s.id} submission={s} onUpdate={updateSubmission} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Submission card ───────────────────────────────────────────────────────────
+function SubmissionCard({ submission: s, onUpdate }) {
+  const [status, setStatus] = useState(s.status || 'Submitted');
+  const [note, setNote] = useState(s.rejection_note || '');
+  const [saving, setSaving] = useState(false);
+  const [pitchExpanded, setPitchExpanded] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const job = s.hh_jobs;
+  const submittedAt = s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+
+  const handleStatusChange = async (newStatus) => {
+    setStatus(newStatus);
+    if (newStatus !== 'Rejected') {
+      await saveStatus(newStatus, note);
+    }
+  };
+
+  const saveStatus = async (st, nt) => {
+    setSaving(true);
+    const patch = { status: st, updated_at: new Date().toISOString() };
+    if (st === 'Hired') patch.hired_at = new Date().toISOString();
+    if (nt !== undefined) patch.rejection_note = nt;
+    await window.sb.from('hh_submissions').update(patch).eq('id', s.id);
+    onUpdate(s.id, patch);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  const handleSaveNote = () => saveStatus(status, note);
+
+  const borderColor = status === 'Hired' ? 'var(--accent)' : status === 'Interviewing' ? 'oklch(0.82 0.08 80)' : status === 'Rejected' ? 'oklch(0.88 0.04 25)' : 'var(--line)';
+
+  return (
+    <div style={{ border: `1.5px solid ${borderColor}`, borderRadius: 10, background: 'var(--panel)', padding: '18px 20px' }}>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+        <Avatar name={s.candidate_name} size={42} />
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em' }}>{s.candidate_name}</span>
+                <Tag tone={statusTone(status)}>{status}</Tag>
+                {saved && <span style={{ fontSize: 12, color: 'var(--accent-ink)' }}>✓ Saved</span>}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>
+                {s.candidate_email}
+                {s.linkedin_url && (
+                  <a href={s.linkedin_url} target="_blank" rel="noopener noreferrer"
+                    style={{ color: 'var(--blue-ink)', textDecoration: 'none', marginLeft: 10 }}>
+                    LinkedIn ↗
+                  </a>
+                )}
+              </div>
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--faint)', textAlign: 'right', flexShrink: 0 }}>
+              <div>{submittedAt}</div>
+              <div style={{ marginTop: 1 }}>by {s.recruiter_email}</div>
+            </div>
+          </div>
+
+          {/* Role */}
+          {job && (
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'var(--faint)' }}>Applied for:</span>
+              <strong>{job.title}</strong>
+              <span style={{ color: 'var(--faint)' }}>at</span>
+              <strong>{job.company_name}</strong>
+            </div>
+          )}
+
+          {/* Pitch */}
+          {s.pitch && (
+            <div style={{ marginBottom: 12 }}>
+              <div
+                onClick={() => setPitchExpanded(x => !x)}
+                style={{
+                  fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6,
+                  background: '#F7F6F2', borderRadius: 6, padding: '10px 12px',
+                  cursor: 'pointer',
+                  display: pitchExpanded ? 'block' : '-webkit-box',
+                  WebkitLineClamp: pitchExpanded ? 'unset' : 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: pitchExpanded ? 'visible' : 'hidden',
+                }}>
+                {s.pitch}
+              </div>
+              {s.pitch.length > 160 && (
+                <button onClick={() => setPitchExpanded(x => !x)}
+                  style={{ fontSize: 12, color: 'var(--faint)', marginTop: 3, padding: 0 }}>
+                  {pitchExpanded ? 'Collapse' : 'Read full pitch'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Extra info */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+            {s.expected_comp && <Tag>💰 {s.expected_comp}</Tag>}
+            {s.availability && <Tag>⏱ {s.availability}</Tag>}
+            {s.work_auth && <Tag>{s.work_auth}</Tag>}
+          </div>
+
+          {/* Status control */}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 500 }}>Status:</span>
+              <select
+                value={status}
+                onChange={e => handleStatusChange(e.target.value)}
+                disabled={saving}
+                style={{
+                  border: '1px solid var(--line)', borderRadius: 6, padding: '5px 10px',
+                  fontSize: 13, outline: 'none', background: 'var(--panel)',
+                  cursor: 'pointer', appearance: 'auto',
+                }}
+              >
+                <option>Submitted</option>
+                <option>Interviewing</option>
+                <option>Hired</option>
+                <option>Rejected</option>
+              </select>
+              {saving && <span style={{ fontSize: 12, color: 'var(--faint)' }}>Saving…</span>}
+            </div>
+
+            {status === 'Rejected' && (
+              <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'flex-end', minWidth: 260 }}>
+                <div style={{ flex: 1 }}>
+                  <textarea
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    placeholder="Rejection feedback for the recruiter (optional)"
+                    rows={2}
+                    style={{
+                      width: '100%', border: '1px solid var(--line)', borderRadius: 6,
+                      padding: '7px 10px', fontSize: 12.5, resize: 'vertical',
+                      outline: 'none', background: 'var(--bg)', lineHeight: 1.5,
+                    }}
+                  />
+                </div>
+                <Btn variant="primary" small onClick={handleSaveNote} disabled={saving}>Save</Btn>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Top bar with nav ──────────────────────────────────────────────────────────
+function TopBar({ page, setPage, onLogout, recruiterCount, submissionCount }) {
+  const navItems = [
+    { id: 'recruiters', label: 'Recruiters', count: recruiterCount },
+    { id: 'candidates', label: 'Candidates', count: submissionCount },
+  ];
+  return (
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 50,
+      background: 'var(--panel)', borderBottom: '1px solid var(--line)',
+      padding: '0 32px', display: 'flex', alignItems: 'center', height: 56, gap: 0,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginRight: 28 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--ink)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: '#fff', fontWeight: 700, fontSize: 12 }}>H</span>
+        </div>
+        <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>HyperHire</span>
+        <span style={{ fontSize: 12, color: 'var(--faint)', padding: '2px 8px', background: '#F0EEE7', borderRadius: 4, fontWeight: 500 }}>Admin</span>
+      </div>
+
+      <div style={{ display: 'flex', height: '100%', gap: 0 }}>
+        {navItems.map(item => (
+          <button
+            key={item.id}
+            onClick={() => setPage(item.id)}
+            style={{
+              padding: '0 18px', fontSize: 13.5, fontWeight: 500,
+              color: page === item.id ? 'var(--ink)' : 'var(--muted)',
+              borderBottom: page === item.id ? '2px solid var(--ink)' : '2px solid transparent',
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              transition: 'color 0.1s',
+            }}>
+            {item.label}
+            {item.count !== undefined && (
+              <span className="mono" style={{ fontSize: 11, color: 'var(--faint)', padding: '1px 6px', background: '#F3F1EA', borderRadius: 999 }}>{item.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ flex: 1 }} />
+      <Btn variant="ghost" small onClick={onLogout}>Sign out</Btn>
+    </div>
+  );
+}
+
+// ── Dashboard shell ───────────────────────────────────────────────────────────
+function Dashboard({ onLogout }) {
+  const [page, setPage] = useState('recruiters');
+  const [recruiterCount, setRecruiterCount] = useState(undefined);
+  const [submissionCount, setSubmissionCount] = useState(undefined);
+
+  useEffect(() => {
+    window.sb.from('hh_recruiters').select('id', { count: 'exact', head: true })
+      .then(({ count }) => setRecruiterCount(count ?? 0));
+    window.sb.from('hh_submissions').select('id', { count: 'exact', head: true })
+      .then(({ count }) => setSubmissionCount(count ?? 0));
+  }, []);
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+      <TopBar page={page} setPage={setPage} onLogout={onLogout}
+        recruiterCount={recruiterCount} submissionCount={submissionCount} />
+      {page === 'recruiters' ? <RecruitersPanel /> : <CandidatesPanel />}
+    </div>
+  );
+}
+
 // ── Root ─────────────────────────────────────────────────────────────────────
 function AdminApp() {
-  const [session, setSession] = useState(undefined); // undefined = loading
+  const [session, setSession] = useState(undefined);
 
   useEffect(() => {
     window.sb.auth.getSession().then(({ data }) => {
@@ -414,10 +729,7 @@ function AdminApp() {
     });
   }, []);
 
-  const handleLogout = () => {
-    window.sb.auth.signOut();
-    setSession(null);
-  };
+  const handleLogout = () => { window.sb.auth.signOut(); setSession(null); };
 
   if (session === undefined) {
     return (
