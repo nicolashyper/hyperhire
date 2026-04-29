@@ -183,10 +183,23 @@ async function main() {
 
   console.log(`\nFetched ${allJobs.length} jobs. Upserting to Supabase...`);
 
+  // Upsert current High Priority jobs
   const { error } = await sb.from('hh_jobs').upsert(allJobs, { onConflict: 'id' });
   if (error) { console.error('Supabase error:', error); process.exit(1); }
 
-  console.log(`✓ Seeded ${allJobs.length} jobs into hh_jobs`);
+  // Deactivate jobs no longer in High Priority
+  const activeIds = allJobs.map(j => j.id);
+  const { data: existing } = await sb.from('hh_jobs').select('id').eq('is_active', true);
+  const toDeactivate = (existing || []).map(r => r.id).filter(id => !activeIds.includes(id));
+  if (toDeactivate.length > 0) {
+    const { error: deErr } = await sb.from('hh_jobs').update({ is_active: false }).in('id', toDeactivate);
+    if (deErr) console.error('Deactivate error:', deErr);
+    else console.log(`✓ Deactivated ${toDeactivate.length} removed jobs: ${toDeactivate.join(', ')}`);
+  } else {
+    console.log('✓ No jobs to deactivate');
+  }
+
+  console.log(`✓ Synced ${allJobs.length} active jobs into hh_jobs`);
   allJobs.forEach(j => console.log(`  ${j.id} — ${j.title} @ ${j.company_name}`));
 }
 
