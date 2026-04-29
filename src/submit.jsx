@@ -174,18 +174,22 @@ function SubmitScreen({ jobId, jobs, recruiterEmail, onBack, onSuccess }) {
           </FormSection>
 
           {/* Consent */}
-          <label style={{
-            display: "flex", alignItems: "flex-start", gap: 10,
-            padding: "12px 14px", border: "1px solid var(--line)",
-            borderRadius: 8, background: "var(--panel)", cursor: "pointer",
+          <div style={{
+            border: `1.5px solid ${errors.consent ? "var(--rose-ink)" : "var(--warn-ink)"}`,
+            borderRadius: 8, background: "var(--warn-bg)", overflow: "hidden",
           }}>
-            <input type="checkbox" checked={form.consent} onChange={(e) => update("consent", e.target.checked)}
-              style={{ marginTop: 2, accentColor: "var(--ink)" }} />
-            <span style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55 }}>
-              I have the candidate's explicit consent to submit them for this role.
-              {errors.consent && <span style={{ color: "var(--rose-ink)", display: "block", marginTop: 4, fontSize: 12 }}>{errors.consent}</span>}
-            </span>
-          </label>
+            <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--warn-ink)", letterSpacing: "0.01em" }}>⚠ Sourcer Acknowledgment</span>
+            </div>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", cursor: "pointer" }}>
+              <input type="checkbox" checked={form.consent} onChange={(e) => update("consent", e.target.checked)}
+                style={{ marginTop: 3, accentColor: "var(--ink)", flexShrink: 0, width: 15, height: 15 }} />
+              <span style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.6 }}>
+                I confirm that this candidate has given their <strong>explicit consent</strong> to be submitted for this role, and that all information provided is accurate to the best of my knowledge. I understand that submitting candidates without their approval, or providing inaccurate information, <strong>may result in permanent suspension from the platform.</strong>
+                {errors.consent && <span style={{ color: "var(--rose-ink)", display: "block", marginTop: 6, fontSize: 12, fontWeight: 500 }}>✗ {errors.consent}</span>}
+              </span>
+            </label>
+          </div>
 
           {dbError && (
             <div style={{ padding: "10px 14px", background: "var(--rose-bg)", color: "var(--rose-ink)", borderRadius: 6, fontSize: 13 }}>
@@ -193,10 +197,7 @@ function SubmitScreen({ jobId, jobs, recruiterEmail, onBack, onSuccess }) {
             </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 6 }}>
-            <div style={{ fontSize: 12.5, color: "var(--muted)" }}>
-              Only you see this submission until the hiring team reviews.
-            </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", paddingTop: 6 }}>
             <div style={{ display: "flex", gap: 10 }}>
               <Button variant="ghost" onClick={onBack}>Cancel</Button>
               <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
