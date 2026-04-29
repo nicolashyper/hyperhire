@@ -9,7 +9,7 @@ function App() {
   const { JobsScreen } = window.HH_JOBS;
   const { JobDetailScreen } = window.HH_JOB_DETAIL;
   const { SubmitScreen } = window.HH_SUBMIT;
-  const { SubmissionsScreen } = window.HH_SUBMISSIONS;
+  const { SubmissionsScreen, ProfileScreen } = window.HH_SUBMISSIONS;
   const { RewardsScreen } = window.HH_REWARDS;
 
   // Auth / identity
@@ -118,10 +118,13 @@ function App() {
       );
     }
     if (screen === "submissions") {
-      return <SubmissionsScreen submissions={submissions} submissionsLoading={submissionsLoading} jobs={jobs} onOpenJob={openJob} />;
+      return <SubmissionsScreen submissions={submissions} submissionsLoading={submissionsLoading} jobs={jobs} onOpenJob={openJob} onRefresh={refreshSubmissions} />;
     }
     if (screen === "rewards") {
       return <RewardsScreen submissions={submissions} recruiterEmail={recruiter.email} />;
+    }
+    if (screen === "onboarding") {
+      return <ProfileScreen recruiter={recruiter} />;
     }
     return null;
   };

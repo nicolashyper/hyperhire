@@ -1,13 +1,14 @@
 // My submissions — fetches from hh_submissions filtered by recruiter_email
 
-const { useState: useStateSubs, useMemo: useMemoSubs } = React;
+const { useState: useStateSubs, useMemo: useMemoSubs, useEffect: useEffectSubs } = React;
 
-function SubmissionsScreen({ submissions, submissionsLoading, jobs, onOpenJob }) {
+function SubmissionsScreen({ submissions, submissionsLoading, jobs, onOpenJob, onRefresh }) {
   const { Badge, CompanyLogo, StatusDot, Avatar } = window.HH_P;
   const { IconArrowRight } = window.HH_ICONS;
   const { TopBar, Page } = window.HH_SHELL;
 
   const [tab, setTab] = useStateSubs("All");
+  const [editSub, setEditSub] = useStateSubs(null);
   const tabs = ["All", "Submitted", "Interviewing", "Hired", "Rejected"];
 
   const jobById = useMemoSubs(() => Object.fromEntries((jobs || []).map(j => [j.id, j])), [jobs]);
@@ -71,6 +72,16 @@ function SubmissionsScreen({ submissions, submissionsLoading, jobs, onOpenJob })
             <div>Note</div><div>Submitted</div><div style={{ textAlign: "right" }}>Fee</div><div></div>
           </div>
 
+          {editSub && (
+            <EditSubmissionModal
+              sub={editSub}
+              job={jobById[editSub.job_id] || {}}
+              onClose={() => setEditSub(null)}
+              onSaved={async () => { setEditSub(null); await onRefresh(); }}
+              onOpenJob={onOpenJob}
+            />
+          )}
+
           {submissionsLoading ? (
             Array.from({length: 5}).map((_, i) => (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr 0.9fr 1.4fr 0.7fr 0.7fr 30px", gap: 14, padding: "14px 18px", borderBottom: i < 4 ? "1px solid var(--line-2)" : "none", alignItems: "center" }}>
@@ -95,7 +106,7 @@ function SubmissionsScreen({ submissions, submissionsLoading, jobs, onOpenJob })
               const job = jobById[s.job_id] || {};
               return (
                 <SubmissionRow key={s.id} sub={s} job={job}
-                  onClick={() => job.id && onOpenJob(job.id)}
+                  onClick={() => setEditSub(s)}
                   isLast={i === filtered.length - 1} />
               );
             })
@@ -208,4 +219,156 @@ function SubmissionRow({ sub, job, onClick, isLast }) {
   );
 }
 
-window.HH_SUBMISSIONS = { SubmissionsScreen };
+function EditSubmissionModal({ sub, job, onClose, onSaved, onOpenJob }) {
+  const { Button, Field, Input, Textarea } = window.HH_P;
+  const sb = window.HH_SB;
+  const [form, setEditForm] = useStateSubs({
+    candidate_name: sub.candidate_name || "",
+    candidate_email: sub.candidate_email || "",
+    linkedin_url: sub.linkedin_url || "",
+    expected_comp: sub.expected_comp || "",
+    availability: sub.availability || "",
+    work_auth: sub.work_auth || "",
+    pitch: sub.pitch || "",
+    note: sub.note || "",
+  });
+  const [saving, setSaving] = useStateSubs(false);
+  const [error, setError] = useStateSubs("");
+
+  const upd = (k, v) => setEditForm(f => ({ ...f, [k]: v }));
+
+  const handleSave = async () => {
+    if (!form.candidate_name.trim()) { setError("Candidate name is required"); return; }
+    setSaving(true); setError("");
+    const { error: e } = await sb.from('hh_submissions').update({
+      candidate_name: form.candidate_name.trim(),
+      candidate_email: form.candidate_email.trim(),
+      linkedin_url: form.linkedin_url.trim(),
+      expected_comp: form.expected_comp.trim(),
+      availability: form.availability.trim(),
+      work_auth: form.work_auth.trim(),
+      pitch: form.pitch.trim(),
+      note: form.note.trim(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', sub.id);
+    setSaving(false);
+    if (e) { setError(e.message); return; }
+    onSaved();
+  };
+
+  const statusColors = { Submitted: "var(--blue-ink)", Interviewing: "var(--warn-ink)", Hired: "var(--accent-ink)", Rejected: "var(--faint)" };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "flex-end" }}
+      onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 480, height: "100vh", background: "var(--panel)",
+        borderLeft: "1px solid var(--line)", display: "flex", flexDirection: "column",
+        boxShadow: "-8px 0 32px rgba(0,0,0,0.08)",
+      }}>
+        {/* Header */}
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--line)", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em" }}>{sub.candidate_name}</div>
+            <button onClick={onClose} style={{ color: "var(--faint)", fontSize: 20, lineHeight: 1, padding: "0 2px" }}>×</button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{job.title || sub.job_id}</span>
+            {job.company_name && <><span style={{ color: "var(--faint)" }}>·</span><span style={{ fontSize: 12.5, color: "var(--muted)" }}>{job.company_name}</span></>}
+            <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, color: statusColors[sub.status] || "var(--muted)" }}>{sub.status}</span>
+          </div>
+          {job.id && (
+            <button onClick={() => { onClose(); onOpenJob(job.id); }} style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)", textDecoration: "underline", textDecorationColor: "var(--line)", textUnderlineOffset: 3 }}>
+              View job →
+            </button>
+          )}
+        </div>
+
+        {/* Scrollable fields */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="hh-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Full name" required>
+              <Input value={form.candidate_name} onChange={v => upd("candidate_name", v)} placeholder="Jane Smith" />
+            </Field>
+            <Field label="Email">
+              <Input value={form.candidate_email} onChange={v => upd("candidate_email", v)} placeholder="jane@gmail.com" />
+            </Field>
+          </div>
+          <Field label="LinkedIn URL">
+            <Input value={form.linkedin_url} onChange={v => upd("linkedin_url", v.replace(/^https?:\/\//, ''))} placeholder="linkedin.com/in/…" prefix="https://" />
+          </Field>
+          <div className="hh-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Expected comp">
+              <Input value={form.expected_comp} onChange={v => upd("expected_comp", v)} placeholder="$200K base" prefix="$" />
+            </Field>
+            <Field label="Availability">
+              <Input value={form.availability} onChange={v => upd("availability", v)} placeholder="2 weeks notice" />
+            </Field>
+          </div>
+          <Field label="Work authorization">
+            <Input value={form.work_auth} onChange={v => upd("work_auth", v)} placeholder="US citizen, visa required…" />
+          </Field>
+          <Field label="Pitch" hint="Why this candidate fits this role">
+            <Textarea rows={4} value={form.pitch} onChange={v => upd("pitch", v)} placeholder="Why they're a strong fit…" />
+          </Field>
+          <Field label="Your notes" hint="Private — not shared with the hiring team">
+            <Textarea rows={3} value={form.note} onChange={v => upd("note", v)} placeholder="Follow-up reminders, context…" />
+          </Field>
+          {error && <div style={{ fontSize: 12.5, color: "var(--rose-ink)", padding: "8px 12px", background: "var(--rose-bg)", borderRadius: 6 }}>{error}</div>}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "14px 24px", borderTop: "1px solid var(--line)", display: "flex", justifyContent: "flex-end", gap: 10, flexShrink: 0 }}>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileScreen({ recruiter }) {
+  const { TopBar, Page } = window.HH_SHELL;
+  const fnLabels = (recruiter.functions || []).join(", ") || "—";
+  const locLabels = (recruiter.locations || []).join(", ") || "—";
+
+  return (
+    <div>
+      <TopBar title="My profile" subtitle="Your recruiter profile on HyperHire." />
+      <Page maxWidth={600}>
+        <div style={{ border: "1px solid var(--line)", borderRadius: 12, background: "var(--panel)", overflow: "hidden" }}>
+          <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 18 }}>
+            <Row label="Name" value={recruiter.name} />
+            <Row label="Email" value={recruiter.email} mono />
+            <Row label="LinkedIn" value={recruiter.linkedin_url ? `https://${recruiter.linkedin_url.replace(/^https?:\/\//, '')}` : "—"} />
+            <Row label="Experience" value={recruiter.years_exp || "—"} />
+            <Row label="Functions" value={fnLabels} />
+            <Row label="Locations" value={locLabels} />
+            {recruiter.bio && <Row label="Bio" value={recruiter.bio} multiline />}
+          </div>
+          <div style={{ borderTop: "1px solid var(--line)", padding: "14px 28px", display: "flex", justifyContent: "flex-end" }}>
+            <button
+              onClick={() => { localStorage.clear(); window.location.reload(); }}
+              style={{ fontSize: 13, color: "var(--rose-ink)", fontWeight: 500, padding: "6px 14px", border: "1px solid var(--rose-ink)", borderRadius: 6, opacity: 0.8 }}
+              onMouseEnter={e => e.currentTarget.style.opacity = 1}
+              onMouseLeave={e => e.currentTarget.style.opacity = 0.8}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </Page>
+    </div>
+  );
+}
+
+function Row({ label, value, mono, multiline }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 12, alignItems: multiline ? "flex-start" : "center" }}>
+      <div style={{ fontSize: 12, fontWeight: 500, color: "var(--faint)", textTransform: "uppercase", letterSpacing: "0.04em", paddingTop: multiline ? 2 : 0 }}>{label}</div>
+      <div className={mono ? "mono" : ""} style={{ fontSize: 13.5, color: "var(--ink)", lineHeight: 1.55 }}>{value || "—"}</div>
+    </div>
+  );
+}
+
+window.HH_SUBMISSIONS = { SubmissionsScreen, ProfileScreen };
