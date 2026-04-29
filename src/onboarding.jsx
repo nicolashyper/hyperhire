@@ -390,6 +390,13 @@ function PendingScreen({ name }) {
           We'll email you once your account is approved after the call.
         </div>
       </div>
+
+      <button
+        onClick={() => { localStorage.clear(); window.location.reload(); }}
+        style={{ marginTop: 20, fontSize: 12.5, color: "var(--faint)", textDecoration: "underline", textDecorationColor: "var(--line)", textUnderlineOffset: 3 }}
+      >
+        Sign out
+      </button>
     </div>
   );
 }
