@@ -4,7 +4,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const APP_URL  = "https://hire.hypertalent.me";
-const LOGO_URL = "https://hire.hypertalent.me/assets/logo-icon.png";
 const FROM     = "HyperHire <onboarding@resend.dev>";
 
 const STATUS_COPY: Record<string, { subject: string; headline: string; body: string; badgeBg: string; badgeText: string; badgeLabel: string }> = {
@@ -68,7 +67,7 @@ serve(async (req) => {
   <tr><td align="center">
     <table role="presentation" width="520" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;background:#FFFFFE;border:1px solid #E8E6DF;border-radius:12px;">
       <tr><td style="padding:36px 40px 32px;">
-        <img src="${LOGO_URL}" alt="HyperHire" width="120" height="auto" style="display:block;height:auto;width:120px;margin-bottom:28px;border:0;outline:none;text-decoration:none;" />
+        <div style="font-size:18px;font-weight:700;letter-spacing:-0.02em;color:#111110;margin-bottom:28px;">HyperHire</div>
 
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:14px;">
           <tr><td style="background:${copy.badgeBg};border-radius:999px;padding:5px 12px;">

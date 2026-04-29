@@ -3,7 +3,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const APP_URL  = "https://hire.hypertalent.me";
-const LOGO_URL = "https://hire.hypertalent.me/assets/logo-icon.png";
 const FROM     = "HyperHire <onboarding@resend.dev>";
 
 serve(async (req) => {
@@ -26,7 +25,7 @@ serve(async (req) => {
   <tr><td align="center">
     <table role="presentation" width="520" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;background:#FFFFFE;border:1px solid #E8E6DF;border-radius:12px;">
       <tr><td style="padding:36px 40px 32px;">
-        <img src="${LOGO_URL}" alt="HyperHire" width="120" height="auto" style="display:block;height:auto;width:120px;margin-bottom:28px;border:0;outline:none;text-decoration:none;" />
+        <div style="font-size:18px;font-weight:700;letter-spacing:-0.02em;color:#111110;margin-bottom:28px;">HyperHire</div>
         <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#111110;line-height:1.3;">You're approved, ${firstName} 🎉</h1>
         <p style="margin:0 0 24px;font-size:14.5px;color:#3A3A35;line-height:1.65;">
           Your HyperHire account is active. You now have access to all open roles and can start submitting candidates immediately.
