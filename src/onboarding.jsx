@@ -401,4 +401,129 @@ function PendingScreen({ name }) {
   );
 }
 
-window.HH_ONBOARDING = { OnboardingScreen, SignInScreen, PendingScreen };
+// ── Rules screen — shown once after vetting before first app access ───────────
+function RulesScreen({ recruiter, onAcknowledged }) {
+  const { Button } = window.HH_P;
+  const sb = window.HH_SB;
+  const [agreed1, setAgreed1] = useStateOnb(false);
+  const [agreed2, setAgreed2] = useStateOnb(false);
+  const [saving, setSaving] = useStateOnb(false);
+
+  const handleProceed = async () => {
+    setSaving(true);
+    await sb.from('hh_recruiters').update({ has_seen_rules: true }).eq('email', recruiter.email);
+    setSaving(false);
+    onAcknowledged();
+  };
+
+  const canProceed = agreed1 && agreed2 && !saving;
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
+      <div style={{ marginBottom: 28, display: "flex", alignItems: "center", gap: 10 }}>
+        <img src="assets/logo-mark.svg" alt="HyperHire" style={{ width: 28, height: 28 }} />
+        <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em" }}>HyperHire</span>
+      </div>
+
+      <div style={{ width: "100%", maxWidth: 620, textAlign: "center", marginBottom: 22 }}>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>
+          Welcome aboard{recruiter?.name ? `, ${recruiter.name.split(" ")[0]}` : ""}
+        </h1>
+        <p style={{ margin: "10px 0 0", fontSize: 14.5, color: "var(--muted)", lineHeight: 1.6 }}>
+          Before you start sourcing, two rules every HyperHire recruiter follows.
+        </p>
+      </div>
+
+      <div style={{ width: "100%", maxWidth: 620, display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* Rule 1 */}
+        <div style={{
+          border: `1.5px solid ${agreed1 ? "var(--accent)" : "var(--line)"}`,
+          borderRadius: 12, background: "var(--panel)", overflow: "hidden",
+          transition: "border-color 0.15s",
+        }}>
+          <div style={{ padding: "16px 22px 14px", borderBottom: "1px solid var(--line-2)", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: "50%",
+              background: "var(--ink)", color: "#fff",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              fontSize: 12, fontWeight: 700, flexShrink: 0,
+            }}>1</div>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em" }}>
+              Never submit a candidate without their explicit consent.
+            </div>
+          </div>
+          <div style={{ padding: "16px 22px 18px" }}>
+            <p style={{ margin: "0 0 10px", fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.65 }}>
+              Before you put a profile in front of us, you must:
+            </p>
+            <ul style={{ margin: "0 0 12px", paddingLeft: 20, fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.75 }}>
+              <li>Tell the candidate the <strong>name of the company</strong></li>
+              <li>Confirm they're <strong>genuinely interested</strong> in chatting with that specific company</li>
+              <li>Get a <strong>clear yes</strong></li>
+            </ul>
+            <p style={{ margin: "0 0 14px", fontSize: 13, color: "var(--muted)", lineHeight: 1.65, fontStyle: "italic" }}>
+              No "I'll just submit them and see." Submissions without consent damage your reputation, the platform's reputation, and the candidate's trust. <strong style={{ color: "var(--rose-ink)", fontStyle: "normal" }}>One strike here is a big deal.</strong>
+            </p>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
+              <input type="checkbox" checked={agreed1} onChange={e => setAgreed1(e.target.checked)}
+                style={{ accentColor: "var(--ink)", width: 16, height: 16 }} />
+              I understand and agree
+            </label>
+          </div>
+        </div>
+
+        {/* Rule 2 */}
+        <div style={{
+          border: `1.5px solid ${agreed2 ? "var(--accent)" : "var(--line)"}`,
+          borderRadius: 12, background: "var(--panel)", overflow: "hidden",
+          transition: "border-color 0.15s",
+        }}>
+          <div style={{ padding: "16px 22px 14px", borderBottom: "1px solid var(--line-2)", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: "50%",
+              background: "var(--ink)", color: "#fff",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              fontSize: 12, fontWeight: 700, flexShrink: 0,
+            }}>2</div>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em" }}>
+              Never name the company in your initial outreach.
+            </div>
+          </div>
+          <div style={{ padding: "16px 22px 18px" }}>
+            <p style={{ margin: "0 0 10px", fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.65 }}>
+              When you first reach out to a candidate, describe the role, the team, the comp, the mission — but <strong>keep the company name back.</strong>
+            </p>
+            <p style={{ margin: "0 0 10px", fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.65 }}>
+              If you reveal it upfront, candidates can (and do) go straight to the company's careers page and apply directly. When that happens, your work is wasted and the platform earns nothing on a placement you sourced.
+            </p>
+            <p style={{ margin: "0 0 14px", fontSize: 13, color: "var(--muted)", lineHeight: 1.65, fontStyle: "italic" }}>
+              Only share the company name once the candidate is engaged and you're moving toward Rule #1's consent step.
+            </p>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
+              <input type="checkbox" checked={agreed2} onChange={e => setAgreed2(e.target.checked)}
+                style={{ accentColor: "var(--ink)", width: 16, height: 16 }} />
+              I understand and agree
+            </label>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          background: "var(--accent-bg)", border: "1px solid var(--accent)",
+          borderRadius: 10, padding: "12px 16px", marginTop: 6,
+          fontSize: 13, color: "var(--accent-ink)", lineHeight: 1.6,
+        }}>
+          <strong>The two rules work together:</strong> vague in the first message, fully transparent before submission.
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+          <Button variant="primary" onClick={handleProceed} disabled={!canProceed}>
+            {saving ? "Saving…" : "I'm ready — start sourcing →"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.HH_ONBOARDING = { OnboardingScreen, SignInScreen, PendingScreen, RulesScreen };

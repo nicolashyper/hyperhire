@@ -4,7 +4,7 @@ const { useState: useStateApp, useEffect: useEffectApp, useCallback: useCallback
 
 function App() {
   const sb = window.HH_SB;
-  const { OnboardingScreen, SignInScreen, PendingScreen } = window.HH_ONBOARDING;
+  const { OnboardingScreen, SignInScreen, PendingScreen, RulesScreen } = window.HH_ONBOARDING;
   const { Sidebar, MobileNav } = window.HH_SHELL;
   const { JobsScreen } = window.HH_JOBS;
   const { JobDetailScreen } = window.HH_JOB_DETAIL;
@@ -94,6 +94,11 @@ function App() {
   // ── Onboarded but not yet vetted ─────────────────────────────────────────────
   if (!recruiter.is_vetted) {
     return <PendingScreen name={recruiter.name} />;
+  }
+
+  // ── Vetted but hasn't acknowledged rules ─────────────────────────────────────
+  if (!recruiter.has_seen_rules) {
+    return <RulesScreen recruiter={recruiter} onAcknowledged={() => setRecruiter({ ...recruiter, has_seen_rules: true })} />;
   }
 
   // ── Main app ─────────────────────────────────────────────────────────────────
