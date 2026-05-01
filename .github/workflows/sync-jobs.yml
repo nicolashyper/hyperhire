@@ -1,0 +1,28 @@
+name: Sync jobs from Notion
+
+on:
+  schedule:
+    # Daily at 8:00 UTC (matches roughly 3am EST / midnight PST)
+    - cron: '0 8 * * *'
+  workflow_dispatch: # allows manual trigger from GitHub Actions UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm install
+
+      - name: Sync High Priority jobs from Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: node seed_jobs.js

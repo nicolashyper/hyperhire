@@ -674,10 +674,134 @@ function SubmissionCard({ submission: s, onUpdate }) {
 }
 
 // ── Sidebar nav ───────────────────────────────────────────────────────────────
-function AdminSidebar({ page, setPage, onLogout, recruiterPending, submissionPending }) {
+// ── JobsPanel ─────────────────────────────────────────────────────────────────
+function JobsPanel() {
+  const [tab, setTab] = useState('active'); // 'active' | 'archived'
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [counts, setCounts] = useState({ active: 0, archived: 0 });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await window.sb.from('hh_jobs')
+      .select('*')
+      .eq('is_active', tab === 'active')
+      .order('id', { ascending: false });
+    setJobs(data || []);
+    setLoading(false);
+
+    const [{ count: ac }, { count: ar }] = await Promise.all([
+      window.sb.from('hh_jobs').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      window.sb.from('hh_jobs').select('id', { count: 'exact', head: true }).eq('is_active', false),
+    ]);
+    setCounts({ active: ac ?? 0, archived: ar ?? 0 });
+  }, [tab]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = jobs.filter(j => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (j.title || '').toLowerCase().includes(s)
+      || (j.company_name || '').toLowerCase().includes(s)
+      || (j.id || '').toLowerCase().includes(s);
+  });
+
+  return (
+    <div style={{ padding: '32px 40px', maxWidth: 1200 }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: '-0.015em' }}>Open roles</h1>
+        <div style={{ fontSize: 13.5, color: 'var(--muted)', marginTop: 3 }}>
+          Synced daily from Notion (Status = High Priority). Removed roles move to Archived.
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--line)', marginBottom: 16 }}>
+        {[
+          { id: 'active',   label: 'Active',   count: counts.active },
+          { id: 'archived', label: 'Archived', count: counts.archived },
+        ].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding: '9px 14px', fontSize: 13.5, fontWeight: 500,
+            color: tab === t.id ? 'var(--ink)' : 'var(--muted)',
+            borderBottom: tab === t.id ? '2px solid var(--ink)' : '2px solid transparent',
+            marginBottom: -1, display: 'inline-flex', alignItems: 'center', gap: 6,
+          }}>
+            {t.label}
+            <span className="mono" style={{
+              fontSize: 11.5, color: 'var(--faint)', padding: '1px 6px',
+              background: '#F3F1EA', borderRadius: 999,
+            }}>{t.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <input value={search} onChange={e => setSearch(e.target.value)}
+        placeholder="Search by title, company, or ID…"
+        style={{
+          width: '100%', maxWidth: 360, marginBottom: 16,
+          padding: '8px 12px', fontSize: 13.5,
+          border: '1px solid var(--line)', borderRadius: 7,
+          background: 'var(--panel)', outline: 'none',
+        }}
+      />
+
+      {/* Table */}
+      <div style={{ border: '1px solid var(--line)', borderRadius: 8, background: 'var(--panel)', overflow: 'hidden' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: '90px 1.6fr 1.2fr 1fr 0.8fr 0.7fr',
+          gap: 14, padding: '10px 18px', borderBottom: '1px solid var(--line)', background: '#FBFAF5',
+          fontSize: 11, fontWeight: 500, color: 'var(--faint)',
+          textTransform: 'uppercase', letterSpacing: '0.05em',
+        }}>
+          <div>ID</div><div>Title</div><div>Company</div>
+          <div>Location</div><div>Comp</div><div style={{ textAlign: 'right' }}>JD</div>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5 }}>Loading…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5 }}>
+            {tab === 'active' ? 'No active roles.' : 'No archived roles.'}
+          </div>
+        ) : filtered.map((j, i) => (
+          <div key={j.id} style={{
+            display: 'grid', gridTemplateColumns: '90px 1.6fr 1.2fr 1fr 0.8fr 0.7fr',
+            gap: 14, padding: '14px 18px',
+            borderBottom: i < filtered.length - 1 ? '1px solid var(--line-2)' : 'none',
+            alignItems: 'center', fontSize: 13,
+          }}>
+            <div className="mono" style={{ fontSize: 12, color: 'var(--faint)' }}>{j.id}</div>
+            <div style={{ fontWeight: 500, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.title}</div>
+            <div style={{ color: 'var(--ink-2)' }}>{j.company_name}</div>
+            <div style={{ color: 'var(--muted)', fontSize: 12.5 }}>
+              {j.location}
+              {j.remote_type && <span style={{ color: 'var(--faint)' }}> · {j.remote_type}</span>}
+            </div>
+            <div className="mono" style={{ fontSize: 12, color: 'var(--muted)' }}>{j.comp_range || '—'}</div>
+            <div style={{ textAlign: 'right' }}>
+              {j.jd_url ? (
+                <a href={j.jd_url} target="_blank" rel="noopener noreferrer" style={{
+                  fontSize: 12, color: 'var(--ink)', textDecoration: 'underline',
+                  textDecorationColor: 'var(--line)', textUnderlineOffset: 3,
+                }}>Open ↗</a>
+              ) : <span style={{ color: 'var(--faint)', fontSize: 12 }}>—</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminSidebar({ page, setPage, onLogout, recruiterPending, submissionPending, activeJobs }) {
   const navItems = [
     { id: 'recruiters', label: 'Recruiters', badge: recruiterPending || null, icon: '👤' },
     { id: 'candidates', label: 'Candidates', badge: submissionPending || null, icon: '📋' },
+    { id: 'jobs',       label: 'Open roles', badge: activeJobs || null,        icon: '💼' },
   ];
   return (
     <div style={{
@@ -740,6 +864,7 @@ function Dashboard({ onLogout }) {
   const [page, setPage] = useState('recruiters');
   const [recruiterPending, setRecruiterPending] = useState(0);
   const [submissionPending, setSubmissionPending] = useState(0);
+  const [activeJobs, setActiveJobs] = useState(0);
 
   useEffect(() => {
     window.sb.from('hh_recruiters').select('id', { count: 'exact', head: true })
@@ -748,14 +873,19 @@ function Dashboard({ onLogout }) {
     window.sb.from('hh_submissions').select('id', { count: 'exact', head: true })
       .eq('status', 'Submitted')
       .then(({ count }) => setSubmissionPending(count ?? 0));
+    window.sb.from('hh_jobs').select('id', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .then(({ count }) => setActiveJobs(count ?? 0));
   }, []);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
       <AdminSidebar page={page} setPage={setPage} onLogout={onLogout}
-        recruiterPending={recruiterPending} submissionPending={submissionPending} />
+        recruiterPending={recruiterPending} submissionPending={submissionPending} activeJobs={activeJobs} />
       <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-        {page === 'recruiters' ? <RecruitersPanel /> : <CandidatesPanel />}
+        {page === 'recruiters' && <RecruitersPanel />}
+        {page === 'candidates' && <CandidatesPanel />}
+        {page === 'jobs'       && <JobsPanel />}
       </div>
     </div>
   );
